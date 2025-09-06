@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fruit Slasher</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            user-select: none;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(to bottom, #1a2980, #26d0ce);
+            color: white;
+            min-height: 100vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            cursor: none;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 20px;
+            width: 100%;
+        }
+        
+        h1 {
+            font-size: 3rem;
+            text-shadow: 3px 3px 5px rgba(0, 0, 0, 0.5);
+            margin-bottom: 10px;
+            color: #ffdd59;
+        }
+        
+        .game-info {
+            display: flex;
+            justify-content: space-between;
+            width: 800px;
+            max-width: 100%;
+            margin-bottom: 20px;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+        
+        .score-container, .lives-container, .combo-container {
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+        
+        #score {
+            color: #ffdd59;
+        }
+        
+        #lives {
+            color: #ff5252;
+        }
+        
+        #combo {
+            color: #ff9852;
+        }
+        
+        .game-container {
+            position: relative;
+            width: 800px;
+            height: 500px;
+            max-width: 100%;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+        
+        .judge-line {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 5px;
+            background: linear-gradient(to right, #ff5252, #ffdd59, #ff5252);
+            box-shadow: 0 -2px 10px rgba(255, 82, 82, 0.7);
+            z-index: 10;
+        }
+        
+        .fruit {
+            position: absolute;
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+            width: 70px;
+            height: 70px;
+            transition: transform 0.2s;
+        }
+        
+        .fruit-half {
+            position: absolute;
+            width: 35px;
+            height: 70px;
+            overflow: hidden;
+        }
+        
+        .fruit-half-left {
+            left: 0;
+        }
+        
+        .fruit-half-right {
+            right: 0;
+        }
+        
+        .fruit-half-inner {
+            position: absolute;
+            width: 70px;
+            height: 70px;
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+        }
+        
+        .cursor-trail {
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.7);
+            pointer-events: none;
+            transform: translate(-50%, -50%);
+            z-index: 100;
+            opacity: 0;
+            transition: width 0.2s, height 0.2s;
+        }
+        
+        .slash-effect {
+            position: absolute;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.8);
+            pointer-events: none;
+            transform: translate(-50%, -50%);
+            z-index: 90;
+        }
+        
+        .controls {
+            margin-top: 20px;
+            display: flex;
+            gap: 15px;
+        }
+        
+        button {
+            padding: 12px 25px;
+            font-size: 1.1rem;
+            background: #ff5252;
+            color: white;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+        
+        button:hover {
+            background: #ff3838;
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+        }
+        
+        button:active {
+            transform: translateY(0);
+        }
+        
+        .instructions {
+            margin-top: 20px;
+            text-align: center;
+            max-width: 600px;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 15px;
+            border-radius: 10px;
+        }
+        
+        .game-over {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            display: none;
+        }
+        
+        .game-over h2 {
+            font-size: 3rem;
+            color: #ffdd59;
+            margin-bottom: 20px;
+        }
+        
+        .game-over p {
+            font-size: 1.5rem;
+            margin-bottom: 30px;
+        }
+        
+        @media (max-width: 850px) {
+            .game-container {
+                width: 95%;
+                height: 400px;
+            }
+            
+            h1 {
+                font-size: 2.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>🍓 Fruit Slasher 🍉</h1>
+        <p>Slice the fruits by moving your cursor over them!</p>
+    </header>
+    
+    <div class="game-info">
+        <div class="score-container">Score: <span id="score">0</span></div>
+        <div class="combo-container">Combo: <span id="combo">0</span>x</div>
+        <div class="lives-container">Lives: <span id="lives">3</span></div>
+    </div>
+    
+    <div class="game-container" id="gameContainer">
+        <div class="judge-line"></div>
+        <div class="game-over" id="gameOver">
+            <h2>Game Over</h2>
+            <p>Your score: <span id="finalScore">0</span></p>
+            <button id="restartButton">Play Again</button>
+        </div>
+    </div>
+    
+    <div class="controls">
+        <button id="startButton">Start Game</button>
+        <button id="pauseButton">Pause</button>
+    </div>
+    
+    <div class="instructions">
+        <h3>How to Play</h3>
+        <p>Move your cursor over the fruits to slice them. Score points for each fruit sliced.</p>
+        <p>Avoid letting fruits fall off the screen or you'll lose a life!</p>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const gameContainer = document.getElementById('gameContainer');
+            const scoreElement = document.getElementById('score');
+            const livesElement = document.getElementById('lives');
+            const comboElement = document.getElementById('combo');
+            const startButton = document.getElementById('startButton');
+            const pauseButton = document.getElementById('pauseButton');
+            const gameOverScreen = document.getElementById('gameOver');
+            const finalScoreElement = document.getElementById('finalScore');
+            const restartButton = document.getElementById('restartButton');
+            
+            let score = 0;
+            let lives = 3;
+            let combo = 0;
+            let gameRunning = false;
+            let gameInterval;
+            let fruits = [];
+            let slashEffects = [];
+            let cursorTrail;
+            let lastCursorX = 0;
+            let lastCursorY = 0;
+            let cursorVelocity = 0;
+            
+            // Fruit types with their properties
+            const fruitTypes = [
+                { name: 'apple', color: '#ff5252', points: 10 },
+                { name: 'orange', color: '#ff9852', points: 15 },
+                { name: 'lemon', color: '#ffdd59', points: 20 },
+                { name: 'kiwi', color: '#a2ff59', points: 25 },
+                { name: 'blueberry', color: '#5252ff', points: 30 }
+            ];
+            
+            // Initialize game
+            function initGame() {
+                score = 0;
+                lives = 3;
+                combo = 0;
+                updateUI();
+                gameOverScreen.style.display = 'none';
+                
+                // Clear any existing fruits
+                fruits.forEach(fruit => {
+                    if (fruit.element && fruit.element.parentNode) {
+                        fruit.element.parentNode.removeChild(fruit.element);
+                    }
+                    if (fruit.halves) {
+                        fruit.halves.forEach(half => {
+                            if (half.parentNode) half.parentNode.removeChild(half);
+                        });
+                    }
+                });
+                fruits = [];
+                
+                // Clear slash effects
+                slashEffects.forEach(effect => {
+                    if (effect.element && effect.element.parentNode) {
+                        effect.element.parentNode.removeChild(effect.element);
+                    }
+                });
+                slashEffects = [];
+                
+                // Create cursor trail
+                if (cursorTrail && cursorTrail.parentNode) {
+                    cursorTrail.parentNode.removeChild(cursorTrail);
+                }
+                cursorTrail = document.createElement('div');
+                cursorTrail.className = 'cursor-trail';
+                document.body.appendChild(cursorTrail);
+            }
+            
+            // Start game
+            function startGame() {
+                if (gameRunning) return;
+                
+                initGame();
+                gameRunning = true;
+                
+                gameInterval = setInterval(() => {
+                    if (!gameRunning) return;
+                    
+                    // Create new fruit
+                    createFruit();
+                    
+                    // Update fruit positions with physics
+                    updateFruits();
+                    
+                    // Update slash effects
+                    updateSlashEffects();
+                }, 1000 / 60); // 60 FPS
+            }
+            
+            // Create a new fruit with physics
+            function createFruit() {
+                if (Math.random() < 0.97) return; // Control frequency of fruit generation
+                
+                const type = fruitTypes[Math.floor(Math.random() * fruitTypes.length)];
+                
+                const fruit = {
+                    x: Math.random() * (gameContainer.offsetWidth - 70),
+                    y: gameContainer.offsetHeight + 50, // Start below the screen
+                    velocityX: (Math.random() - 0.5) * 4, // Horizontal movement
+                    velocityY: - (8 + Math.random() * 8), // Upward velocity (negative Y)
+                    gravity: 0.2,
+                    type: type,
+                    element: document.createElement('div'),
+                    sliced: false,
+                    hasBeenCounted: false, // To avoid double counting for lives
+                    rotation: 0,
+                    rotationSpeed: (Math.random() - 0.5) * 10
+                };
+                
+                fruit.element.className = 'fruit';
+                fruit.element.style.left = fruit.x + 'px';
+                fruit.element.style.top = fruit.y + 'px';
+                fruit.element.style.backgroundColor = type.color;
+                fruit.element.style.borderRadius = '50%';
+                fruit.element.style.boxShadow = 'inset 0 0 15px rgba(255, 255, 255, 0.5)';
+                
+                gameContainer.appendChild(fruit.element);
+                fruits.push(fruit);
+            }
+            
+            // Update fruit positions with physics
+            function updateFruits() {
+                for (let i = fruits.length - 1; i >= 0; i--) {
+                    const fruit = fruits[i];
+                    
+                    // Apply physics
+                    fruit.velocityY += fruit.gravity;
+                    fruit.x += fruit.velocityX;
+                    fruit.y += fruit.velocityY;
+                    fruit.rotation += fruit.rotationSpeed;
+                    
+                    // Bounce off walls
+                    if (fruit.x <= 0 || fruit.x >= gameContainer.offsetWidth - 70) {
+                        fruit.velocityX *= -0.8; // Reverse and lose some energy
+                        fruit.x = Math.max(0, Math.min(fruit.x, gameContainer.offsetWidth - 70));
+                    }
+                    
+                    // Update position and rotation
+                    fruit.element.style.left = fruit.x + 'px';
+                    fruit.element.style.top = fruit.y + 'px';
+                    fruit.element.style.transform = `rotate(${fruit.rotation}deg)`;
+                    
+                    // Check if fruit hits the bottom (judge line)
+                    if (fruit.y >= gameContainer.offsetHeight - 70 && !fruit.sliced) {
+                        // Only count if moving downward
+                        if (fruit.velocityY > 0 && !fruit.hasBeenCounted) {
+                            fruit.hasBeenCounted = true;
+                            loseLife();
+                        }
+                    }
+                    
+                    // Remove if out of screen (with buffer)
+                    if (fruit.y > gameContainer.offsetHeight + 100) {
+                        gameContainer.removeChild(fruit.element);
+                        if (fruit.halves) {
+                            fruit.halves.forEach(half => {
+                                if (half.parentNode) half.parentNode.removeChild(half);
+                            });
+                        }
+                        fruits.splice(i, 1);
+                    }
+                    
+                    // Update halves if sliced
+                    if (fruit.sliced && fruit.halves) {
+                        fruit.halves.forEach((half, index) => {
+                            half.style.left = fruit.x + (index === 0 ? 0 : 35) + 'px';
+                            half.style.top = fruit.y + 'px';
+                            half.style.transform = `rotate(${fruit.rotation}deg)`;
+                        });
+                    }
+                }
+            }
+            
+            // Update slash effects
+            function updateSlashEffects() {
+                for (let i = slashEffects.length - 1; i >= 0; i--) {
+                    const effect = slashEffects[i];
+                    
+                    // Update effect properties
+                    effect.size -= 2;
+                    effect.opacity -= 0.05;
+                    
+                    if (effect.size <= 0 || effect.opacity <= 0) {
+                        // Remove effect
+                        if (effect.element.parentNode) {
+                            effect.element.parentNode.removeChild(effect.element);
+                        }
+                        slashEffects.splice(i, 1);
+                    } else {
+                        // Update effect visual
+                        effect.element.style.width = effect.size + 'px';
+                        effect.element.style.height = effect.size + 'px';
+                        effect.element.style.opacity = effect.opacity;
+                    }
+                }
+            }
+            
+            // Handle cursor movement and trail
+            document.addEventListener('mousemove', (e) => {
+                if (!gameRunning) return;
+                
+                // Calculate cursor velocity
+                const deltaX = e.clientX - lastCursorX;
+                const deltaY = e.clientY - lastCursorY;
+                cursorVelocity = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+                
+                // Create slash effect when moving fast
+                if (cursorVelocity > 10) {
+                    createSlashEffect(e.clientX, e.clientY, cursorVelocity);
+                }
+                
+                // Update cursor trail
+                if (cursorTrail) {
+                    cursorTrail.style.left = e.clientX + 'px';
+                    cursorTrail.style.top = e.clientY + 'px';
+                    
+                    // Adjust trail size based on velocity
+                    const size = Math.min(60, 20 + cursorVelocity / 2);
+                    cursorTrail.style.width = size + 'px';
+                    cursorTrail.style.height = size + 'px';
+                    
+                    // Show trail with opacity based on velocity
+                    cursorTrail.style.opacity = Math.min(0.7, cursorVelocity / 50);
+                    
+                    // Hide trail after a delay
+                    clearTimeout(cursorTrail.hideTimeout);
+                    cursorTrail.hideTimeout = setTimeout(() => {
+                        if (cursorTrail) cursorTrail.style.opacity = '0';
+                    }, 100);
+                }
+                
+                lastCursorX = e.clientX;
+                lastCursorY = e.clientY;
+                
+                // Check for fruit slicing only if cursor is moving fast enough
+                if (cursorVelocity > 5) {
+                    checkFruitSlicing(e);
+                }
+            });
+            
+            // Create a slash effect
+            function createSlashEffect(x, y, velocity) {
+                const effect = {
+                    x: x,
+                    y: y,
+                    size: 20 + velocity / 2,
+                    opacity: 0.8,
+                    element: document.createElement('div')
+                };
+                
+                effect.element.className = 'slash-effect';
+                effect.element.style.left = x + 'px';
+                effect.element.style.top = y + 'px';
+                effect.element.style.width = effect.size + 'px';
+                effect.element.style.height = effect.size + 'px';
+                effect.element.style.opacity = effect.opacity;
+                
+                document.body.appendChild(effect.element);
+                slashEffects.push(effect);
+            }
+            
+            // Check if cursor slices any fruit
+            function checkFruitSlicing(e) {
+                const rect = gameContainer.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                
+                for (let i = fruits.length - 1; i >= 0; i--) {
+                    const fruit = fruits[i];
+                    if (fruit.sliced) continue;
+                    
+                    const fruitX = parseFloat(fruit.element.style.left) + 35;
+                    const fruitY = parseFloat(fruit.element.style.top) + 35;
+                    
+                    // Calculate distance between cursor and fruit center
+                    const distance = Math.sqrt(Math.pow(x - fruitX, 2) + Math.pow(y - fruitY, 2));
+                    
+                    if (distance < 35) { // If cursor is over the fruit
+                        sliceFruit(i);
+                    }
+                }
+            }
+            
+            // Slice a fruit into two halves
+            function sliceFruit(index) {
+                const fruit = fruits[index];
+                fruit.sliced = true;
+                
+                // Create slash effect at fruit position
+                const rect = gameContainer.getBoundingClientRect();
+                const fruitScreenX = rect.left + fruit.x + 35;
+                const fruitScreenY = rect.top + fruit.y + 35;
+                createSlashEffect(fruitScreenX, fruitScreenY, 30);
+                
+                // Hide the whole fruit
+                fruit.element.style.opacity = '0';
+                
+                // Create two halves
+                fruit.halves = [];
+                
+                // Left half
+                const leftHalf = document.createElement('div');
+                leftHalf.className = 'fruit-half fruit-half-left';
+                leftHalf.style.left = fruit.x + 'px';
+                leftHalf.style.top = fruit.y + 'px';
+                
+                const leftHalfInner = document.createElement('div');
+                leftHalfInner.className = 'fruit-half-inner';
+                leftHalfInner.style.left = '0';
+                leftHalfInner.style.backgroundColor = fruit.type.color;
+                leftHalfInner.style.borderRadius = '50% 0 0 50%';
+                leftHalfInner.style.boxShadow = 'inset 0 0 15px rgba(255, 255, 255, 0.5)';
+                
+                leftHalf.appendChild(leftHalfInner);
+                gameContainer.appendChild(leftHalf);
+                fruit.halves.push(leftHalf);
+                
+                // Right half
+                const rightHalf = document.createElement('div');
+                rightHalf.className = 'fruit-half fruit-half-right';
+                rightHalf.style.left = (fruit.x + 35) + 'px';
+                rightHalf.style.top = fruit.y + 'px';
+                
+                const rightHalfInner = document.createElement('div');
+                rightHalfInner.className = 'fruit-half-inner';
+                rightHalfInner.style.left = '-35px';
+                rightHalfInner.style.backgroundColor = fruit.type.color;
+                rightHalfInner.style.borderRadius = '0 50% 50% 0';
+                rightHalfInner.style.boxShadow = 'inset 0 0 15px rgba(255, 255, 255, 0.5)';
+                
+                rightHalf.appendChild(rightHalfInner);
+                gameContainer.appendChild(rightHalf);
+                fruit.halves.push(rightHalf);
+                
+                // Apply physics to halves - they fly in opposite directions
+                fruit.velocityX = 0; // Reset horizontal movement
+                fruit.velocityY = 2; // Make halves fall down
+                fruit.gravity = 0.5; // Increase gravity for falling effect
+                fruit.rotationSpeed *= 1.5; // Increase rotation speed
+                
+                // Update score and combo
+                combo++;
+                score += fruit.type.points * combo;
+                updateUI();
+            }
+            
+            // Lose a life
+            function loseLife() {
+                lives--;
+                combo = 0;
+                updateUI();
+                
+                if (lives <= 0) {
+                    endGame();
+                }
+            }
+            
+            // Update UI elements
+            function updateUI() {
+                scoreElement.textContent = score;
+                livesElement.textContent = lives;
+                comboElement.textContent = combo;
+            }
+            
+            // End game
+            function endGame() {
+                gameRunning = false;
+                clearInterval(gameInterval);
+                finalScoreElement.textContent = score;
+                gameOverScreen.style.display = 'flex';
+            }
+            
+            // Event listeners for buttons
+            startButton.addEventListener('click', () => {
+                startGame();
+            });
+            
+            pauseButton.addEventListener('click', () => {
+                gameRunning = !gameRunning;
+                pauseButton.textContent = gameRunning ? 'Pause' : 'Resume';
+            });
+            
+            restartButton.addEventListener('click', () => {
+                startGame();
+            });
+            
+            // Initialize but don't start the game yet
+            initGame();
+        });
+    </script>
+</body>
+</html>
