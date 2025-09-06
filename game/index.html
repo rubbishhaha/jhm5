@@ -265,7 +265,7 @@
             const restartButton = document.getElementById('restartButton');
             
             let score = 0;
-            let lives = 3000;
+            let lives = 3;
             let combo = 0;
             let gameRunning = false;
             let gameInterval;
@@ -288,7 +288,7 @@
             // Initialize game
             function initGame() {
                 score = 0;
-                lives = 3000;
+                lives = 3;
                 combo = 0;
                 updateUI();
                 gameOverScreen.style.display = 'none';
@@ -346,7 +346,7 @@
             
             // Create a new fruit with physics
             function createFruit() {
-                if (Math.random() < 0.7) return; // Control frequency of fruit generation
+                if (Math.random() < 0.97) return; // Control frequency of fruit generation
                 
                 const type = fruitTypes[Math.floor(Math.random() * fruitTypes.length)];
                 
@@ -590,10 +590,10 @@
                 fruit.halves.push(rightHalf);
                 
                 // Apply physics to halves - they fly in opposite directions
-                fruit.velocityX = 0; // Reset horizontal movement
-                fruit.velocityY = 2; // Make halves fall down
-                fruit.gravity = 0.5; // Increase gravity for falling effect
-                fruit.rotationSpeed *= 1.5; // Increase rotation speed
+                // Don't change Y velocity, only add horizontal momentum
+                const horizontalForce = 5 + Math.random() * 3;
+                fruit.velocityXLeft = -horizontalForce; // Left half goes left
+                fruit.velocityXRight = horizontalForce; // Right half goes right
                 
                 // Update score and combo
                 combo++;
